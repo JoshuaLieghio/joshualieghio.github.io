@@ -135,8 +135,8 @@
         }
 
         input[type="number"] {
-            width: 70px;
-            padding: 6px 8px;
+            width: 50px;
+            padding: 4px 6px;
             border: 1px solid var(--color-border);
             border-radius: 6px;
             background: var(--color-bg-primary);
@@ -433,9 +433,15 @@
                             <tr>
                                 <th>Match</th>
                                 <th>Player 1</th>
-                                <th>Score</th>
+                                <th>G1</th>
+                                <th>G2</th>
+                                <th>G3</th>
+                                <th>Total</th>
                                 <th></th>
-                                <th>Score</th>
+                                <th>Total</th>
+                                <th>G3</th>
+                                <th>G2</th>
+                                <th>G1</th>
                                 <th>Player 2</th>
                                 <th>Winner</th>
                             </tr>
@@ -505,14 +511,26 @@
             matches.forEach((match, index) => {
                 const row = document.createElement('tr');
                 const matchNum = index + 1;
-                const result = matchResults[matchNum] || { score1: '', score2: '' };
+                const result = matchResults[matchNum] || { 
+                    p1g1: '', p1g2: '', p1g3: '', 
+                    p2g1: '', p2g2: '', p2g3: '' 
+                };
+
+                const p1Total = (parseInt(result.p1g1) || 0) + (parseInt(result.p1g2) || 0) + (parseInt(result.p1g3) || 0);
+                const p2Total = (parseInt(result.p2g1) || 0) + (parseInt(result.p2g2) || 0) + (parseInt(result.p2g3) || 0);
 
                 row.innerHTML = `
                     <td class="match-number">#${matchNum}</td>
                     <td><strong>${match[0]}</strong></td>
-                    <td><input type="number" id="score1-${matchNum}" value="${result.score1}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><input type="number" id="p1g1-${matchNum}" value="${result.p1g1}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><input type="number" id="p1g2-${matchNum}" value="${result.p1g2}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><input type="number" id="p1g3-${matchNum}" value="${result.p1g3}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><strong id="p1total-${matchNum}">${p1Total || ''}</strong></td>
                     <td class="vs">vs</td>
-                    <td><input type="number" id="score2-${matchNum}" value="${result.score2}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><strong id="p2total-${matchNum}">${p2Total || ''}</strong></td>
+                    <td><input type="number" id="p2g3-${matchNum}" value="${result.p2g3}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><input type="number" id="p2g2-${matchNum}" value="${result.p2g2}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
+                    <td><input type="number" id="p2g1-${matchNum}" value="${result.p2g1}" min="0" onchange="updateMatch(${matchNum})" disabled></td>
                     <td><strong>${match[1]}</strong></td>
                     <td id="winner-${matchNum}" class="winner-display"></td>
                 `;
@@ -523,16 +541,32 @@
         }
 
         function updateMatch(matchNum) {
-            const score1 = document.getElementById(`score1-${matchNum}`).value;
-            const score2 = document.getElementById(`score2-${matchNum}`).value;
+            const p1g1 = document.getElementById(`p1g1-${matchNum}`).value;
+            const p1g2 = document.getElementById(`p1g2-${matchNum}`).value;
+            const p1g3 = document.getElementById(`p1g3-${matchNum}`).value;
+            const p2g1 = document.getElementById(`p2g1-${matchNum}`).value;
+            const p2g2 = document.getElementById(`p2g2-${matchNum}`).value;
+            const p2g3 = document.getElementById(`p2g3-${matchNum}`).value;
 
             const targetResults = isEditMode ? draftMatchResults : matchResults;
 
-            if (score1 !== '' && score2 !== '') {
+            const hasAnyScore = p1g1 || p1g2 || p1g3 || p2g1 || p2g2 || p2g3;
+
+            if (hasAnyScore) {
                 targetResults[matchNum] = {
-                    score1: parseInt(score1),
-                    score2: parseInt(score2)
+                    p1g1: p1g1 || '',
+                    p1g2: p1g2 || '',
+                    p1g3: p1g3 || '',
+                    p2g1: p2g1 || '',
+                    p2g2: p2g2 || '',
+                    p2g3: p2g3 || ''
                 };
+
+                const p1Total = (parseInt(p1g1) || 0) + (parseInt(p1g2) || 0) + (parseInt(p1g3) || 0);
+                const p2Total = (parseInt(p2g1) || 0) + (parseInt(p2g2) || 0) + (parseInt(p2g3) || 0);
+                
+                document.getElementById(`p1total-${matchNum}`).textContent = p1Total || '';
+                document.getElementById(`p2total-${matchNum}`).textContent = p2Total || '';
             } else {
                 delete targetResults[matchNum];
             }
@@ -562,12 +596,34 @@
                 const result = matchResults[matchNum];
 
                 if (result) {
-                    if (result.score1 > result.score2) {
+                    const p1g1 = parseInt(result.p1g1) || 0;
+                    const p1g2 = parseInt(result.p1g2) || 0;
+                    const p1g3 = parseInt(result.p1g3) || 0;
+                    const p2g1 = parseInt(result.p2g1) || 0;
+                    const p2g2 = parseInt(result.p2g2) || 0;
+                    const p2g3 = parseInt(result.p2g3) || 0;
+
+                    let p1GamesWon = 0;
+                    let p2GamesWon = 0;
+
+                    if (p1g1 > p2g1) p1GamesWon++; else if (p2g1 > p1g1) p2GamesWon++;
+                    if (p1g2 > p2g2) p1GamesWon++; else if (p2g2 > p1g2) p2GamesWon++;
+                    if (p1g3 > p2g3) p1GamesWon++; else if (p2g3 > p1g3) p2GamesWon++;
+
+                    if (p1GamesWon > p2GamesWon) {
                         winnerCell.textContent = match[0];
-                    } else if (result.score2 > result.score1) {
+                    } else if (p2GamesWon > p1GamesWon) {
                         winnerCell.textContent = match[1];
                     } else {
-                        winnerCell.textContent = 'Draw';
+                        const p1Total = p1g1 + p1g2 + p1g3;
+                        const p2Total = p2g1 + p2g2 + p2g3;
+                        if (p1Total > p2Total) {
+                            winnerCell.textContent = match[0];
+                        } else if (p2Total > p1Total) {
+                            winnerCell.textContent = match[1];
+                        } else {
+                            winnerCell.textContent = 'Draw';
+                        }
                     }
                 } else {
                     winnerCell.textContent = '';
@@ -594,19 +650,40 @@
 
                 if (result) {
                     const [player1, player2] = match;
-                    const { score1, score2 } = result;
+                    const p1g1 = parseInt(result.p1g1) || 0;
+                    const p1g2 = parseInt(result.p1g2) || 0;
+                    const p1g3 = parseInt(result.p1g3) || 0;
+                    const p2g1 = parseInt(result.p2g1) || 0;
+                    const p2g2 = parseInt(result.p2g2) || 0;
+                    const p2g3 = parseInt(result.p2g3) || 0;
+
+                    const p1Total = p1g1 + p1g2 + p1g3;
+                    const p2Total = p2g1 + p2g2 + p2g3;
+
+                    let p1GamesWon = 0;
+                    let p2GamesWon = 0;
+
+                    if (p1g1 > p2g1) p1GamesWon++; else if (p2g1 > p1g1) p2GamesWon++;
+                    if (p1g2 > p2g2) p1GamesWon++; else if (p2g2 > p1g2) p2GamesWon++;
+                    if (p1g3 > p2g3) p1GamesWon++; else if (p2g3 > p1g3) p2GamesWon++;
 
                     standings[player1].played++;
                     standings[player2].played++;
-                    standings[player1].pointsFor += score1;
-                    standings[player1].pointsAgainst += score2;
-                    standings[player2].pointsFor += score2;
-                    standings[player2].pointsAgainst += score1;
+                    standings[player1].pointsFor += p1Total;
+                    standings[player1].pointsAgainst += p2Total;
+                    standings[player2].pointsFor += p2Total;
+                    standings[player2].pointsAgainst += p1Total;
 
-                    if (score1 > score2) {
+                    if (p1GamesWon > p2GamesWon) {
                         standings[player1].wins++;
                         standings[player2].losses++;
-                    } else if (score2 > score1) {
+                    } else if (p2GamesWon > p1GamesWon) {
+                        standings[player2].wins++;
+                        standings[player1].losses++;
+                    } else if (p1Total > p2Total) {
+                        standings[player1].wins++;
+                        standings[player2].losses++;
+                    } else if (p2Total > p1Total) {
                         standings[player2].wins++;
                         standings[player1].losses++;
                     }
@@ -656,8 +733,11 @@
         function updateStats() {
             const completed = Object.keys(matchResults).length;
             const remaining = 36 - completed;
-            const totalPoints = Object.values(matchResults).reduce((sum, result) => 
-                sum + result.score1 + result.score2, 0);
+            const totalPoints = Object.values(matchResults).reduce((sum, result) => {
+                const p1Total = (parseInt(result.p1g1) || 0) + (parseInt(result.p1g2) || 0) + (parseInt(result.p1g3) || 0);
+                const p2Total = (parseInt(result.p2g1) || 0) + (parseInt(result.p2g2) || 0) + (parseInt(result.p2g3) || 0);
+                return sum + p1Total + p2Total;
+            }, 0);
 
             document.getElementById('completedMatches').textContent = completed;
             document.getElementById('remainingMatches').textContent = remaining;
